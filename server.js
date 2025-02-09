@@ -144,14 +144,26 @@ async function startServer() {
 
     app.post("/api/overtime", async (req, res) => {
       const { employee_id, date, hours } = req.body;
+    
+      // Input validation
+      if (!employee_id || !date || hours === undefined) {
+        return res.status(400).json({ error: "All fields are required" });
+      }
+    
       try {
-        await req.db.execute(
-          "INSERT INTO overtime (employee_id, date, hours) VALUES (?, ?, ?)",
-          [employee_id, date, hours]
-        );
-        res.json({ message: "Overtime recorded successfully" });
+        // Insert overtime record into the database
+        const query = "INSERT INTO overtime (employee_id, date, hours) VALUES (?, ?, ?)";
+        await req.db.execute(query, [employee_id, date, hours]);
+    
+        res.status(201).json({ message: "Overtime recorded successfully" });
       } catch (error) {
         console.error("Error adding overtime record:", error.message);
+    
+        // Handle specific MySQL errors (e.g., foreign key constraint failures)
+        if (error.code === "ER_NO_REFERENCED_ROW_2") {
+          return res.status(400).json({ error: "Invalid employee_id. Employee not found." });
+        }
+    
         res.status(500).json({ error: "Error adding overtime record" });
       }
     });

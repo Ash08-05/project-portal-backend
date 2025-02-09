@@ -9,7 +9,12 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Middleware
-app.use(cors());
+app.use(
+  cors({
+    origin: "https://portal-testing-1608.netlify.app/", // Update with your frontend's domain
+    credentials: true,
+  })
+);
 app.use(express.json());
 
 // Database connection string
@@ -50,29 +55,24 @@ async function startServer() {
     
 
     app.post("/api/employees", async (req, res) => {
-      const { name, department, designation } = req.body;
+      const { name, employee_id, department, designation } = req.body;
+    
+      if (!name || !employee_id || !department || !designation) {
+        return res.status(400).json({ error: "All fields are required" });
+      }
+    
       try {
-        await req.db.execute(
-          "INSERT INTO employees (name, department, designation) VALUES (?, ?, ?)",
-          [name, department, designation]
-        );
+        const query = "INSERT INTO employees (name, employee_id, department, designation) VALUES (?, ?, ?, ?)";
+        const values = [name, employee_id, department, designation];
+    
+        await req.db.execute(query, values);
         res.status(201).json({ message: "Employee added successfully" });
       } catch (error) {
-        console.error("Error adding employee:", error.message);
-        res.status(500).json({ error: "Error adding employee" });
+        console.error("Error adding employee:", error);
+        res.status(500).json({ error: "Failed to add employee" });
       }
     });
-    app.delete("/api/employees/:id", async (req, res) => {
-      const { id } = req.params;
-      try {
-        await req.db.execute("DELETE FROM employees WHERE id = ?", [id]);
-        res.json({ message: "Employee deleted successfully" });
-      } catch (error) {
-        console.error("Error deleting employee:", error.message);
-        res.status(500).json({ error: "Error deleting employee" });
-      }
-    });
-
+    
  // Attendance Routes
  app.post("/api/attendance", async (req, res) => {
   const { employee_id, date, status } = req.body;
@@ -117,9 +117,7 @@ async function startServer() {
       }
     });
 
-                                                               // Overtime Routes
-                                                                // Overtime Routes
-                                                                 // Overtime Routes
+// Overtime Routes
     app.get("/api/overtime", async (req, res) => {
       const query = `
         SELECT 
